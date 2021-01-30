@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2021-01-30T00:24:10Z</date>
+    <groups>
+        <group>
+            <name>Templates</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template Web Monitoring</template>
+            <name>Template Web Monitoring</name>
+            <description>Simplified model for monitoring portals and websites.</description>
+            <groups>
+                <group>
+                    <name>Templates</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>web</name>
+                </application>
+            </applications>
+            <httptests>
+                <httptest>
+                    <name>Web</name>
+                    <application>
+                        <name>web</name>
+                    </application>
+                    <attempts>2</attempts>
+                    <agent>Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)</agent>
+                    <steps>
+                        <step>
+                            <name>Etapa 1</name>
+                            <url>{$SITE_URL}</url>
+                            <timeout>20</timeout>
+                            <required>{$SITE_STRING}</required>
+                            <status_codes>200</status_codes>
+                        </step>
+                    </steps>
+                </httptest>
+            </httptests>
+            <macros>
+                <macro>
+                    <macro>{$PORTAL}</macro>
+                    <description>Site / portal name</description>
+                </macro>
+                <macro>
+                    <macro>{$SITE_STRING}</macro>
+                    <description>Text to be located within the monitored page.</description>
+                </macro>
+                <macro>
+                    <macro>{$SITE_URL}</macro>
+                    <description>URL to be monitored.</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <triggers>
+        <trigger>
+            <expression>{Template Web Monitoring:web.test.time[Web,Etapa 1,resp].min(5m)}&gt;{Template Web Monitoring:web.test.time[Web,Etapa 1,resp].avg(10m,1h)}</expression>
+            <name>Access time to the {$PORTAL} portal is slower than normal</name>
+            <opdata>Access time: Now {ITEM.VALUE1}</opdata>
+            <url>{$SITE_URL}</url>
+            <priority>WARNING</priority>
+            <description>The {$PORTAL} site is taking longer than usual to respond to test resquisition.</description>
+            <dependencies>
+                <dependency>
+                    <name>Site {$PORTAL} is responding with error</name>
+                    <expression>{Template Web Monitoring:web.test.fail[Web].max(#3)}&lt;&gt;0 and {Template Web Monitoring:web.test.error[Web].str()}=1</expression>
+                    <recovery_expression>{Template Web Monitoring:web.test.fail[Web].max(#3)}=0</recovery_expression>
+                </dependency>
+            </dependencies>
+        </trigger>
+        <trigger>
+            <expression>{Template Web Monitoring:web.test.fail[Web].max(#3)}&lt;&gt;0 and {Template Web Monitoring:web.test.error[Web].str()}=1</expression>
+            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+            <recovery_expression>{Template Web Monitoring:web.test.fail[Web].max(#3)}=0</recovery_expression>
+            <name>Site {$PORTAL} is responding with error</name>
+            <opdata>Error {ITEM.VALUE2}</opdata>
+            <url>{$SITE_URL}</url>
+            <priority>HIGH</priority>
+            <description>The site {$PORTAL} is experiencing an error.</description>
+        </trigger>
+    </triggers>
+</zabbix_export>
